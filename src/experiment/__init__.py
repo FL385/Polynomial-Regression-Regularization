@@ -1,15 +1,11 @@
-"""Compatibility imports for experiment helpers.
+"""Experiment package for polynomial regression comparisons."""
 
-New experiment implementations live in the ``src.experiment`` package so that
-L1, L2, and future experiments can each have their own module.
-"""
-
-from src.experiment import (
-    find_best_regularized_polynomial_from_csv,
-    fit_l1_polynomial_from_csv,
-    fit_l2_polynomial_from_csv,
+from src.experiment.auto_selection import find_best_regularized_polynomial_from_csv
+from src.experiment.common import format_polynomial
+from src.experiment.l1_regression import fit_l1_polynomial_from_csv
+from src.experiment.l2_regression import fit_l2_polynomial_from_csv
+from src.experiment.runner import (
     fit_regularized_polynomial_from_csv,
-    format_polynomial,
     run_experiment,
     run_l1_l2_regression_from_csv,
     summarize_results,
