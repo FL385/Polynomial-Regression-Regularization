@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from sklearn.linear_model import Lasso, Ridge
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.preprocessing import PolynomialFeatures
+
+RegressionModel = Lasso | LinearRegression | Ridge
 
 DEFAULT_DEGREE_CANDIDATES = tuple(range(1, 9))
 DEFAULT_ALPHA_CANDIDATES = (
@@ -97,12 +99,12 @@ def train_validation_split(
 
 
 def fit_polynomial_model(
-    model: Lasso | Ridge,
+    model: RegressionModel,
     x_values: np.ndarray,
     y_values: np.ndarray,
     feature_columns: list[str],
     degree: int,
-) -> tuple[Lasso | Ridge, PolynomialFeatures, list[str]]:
+) -> tuple[RegressionModel, PolynomialFeatures, list[str]]:
     """Fit a model after expanding input values into polynomial features."""
     polynomial_features = PolynomialFeatures(degree=degree, include_bias=False)
     x_polynomial = polynomial_features.fit_transform(x_values)

@@ -23,6 +23,7 @@ Polynomial-Regression-Regularization/
 │   ├── models.py
 │   ├── experiments.py
 │   ├── experiment/
+│   │   ├── no_regularization.py
 │   │   ├── l1_regression.py
 │   │   ├── l2_regression.py
 │   │   ├── auto_selection.py
@@ -113,6 +114,20 @@ The first field `n` is a single positive integer. Here, `(e1,e2,...,en)` is
 the exponent tuple for one polynomial term. For example, `(0,2)` means the term
 using `x2^2`, and `(1,0)` means the term using `x1`.
 
+Save generated data to CSV:
+
+```python
+from src.data_generator import generate_polynomial_data, save_dataset_to_csv
+
+x_values, y_values = generate_polynomial_data(
+    n_samples=100,
+    noise=0.1,
+    random_state=42,
+)
+
+save_dataset_to_csv(x_values, y_values, "dataset.csv")
+```
+
 ## CSV Regression Experiments
 
 Experiment helpers read generated datasets from CSV files. The expected CSV
@@ -126,25 +141,27 @@ x1,x2,...,y
 The `y` column is the target value, and all other columns are treated as input
 features.
 
-Run L1 and L2 polynomial regression from a CSV file:
+Run unregularized, L1, and L2 polynomial regression from a CSV file:
 
 ```python
-from src.experiments import run_l1_l2_regression_from_csv
+from src.experiments import run_regression_comparison_from_csv
 
-polynomials = run_l1_l2_regression_from_csv(
+polynomials = run_regression_comparison_from_csv(
     csv_path="dataset.csv",
     degree=2,
     l1_alpha=0.01,
     l2_alpha=1.0,
 )
 
+print(polynomials["none"])
 print(polynomials["l1"])
 print(polynomials["l2"])
 ```
 
-L1 and L2 are also available as separate experiment files:
+Each regression type is also available as a separate experiment file:
 
 ```python
+from src.experiment.no_regularization import fit_no_regularization_polynomial_from_csv
 from src.experiment.l1_regression import fit_l1_polynomial_from_csv
 from src.experiment.l2_regression import fit_l2_polynomial_from_csv
 ```
@@ -174,10 +191,44 @@ print(results["best"]["polynomial"])
 ```
 
 This automatic search only requires the CSV file. It uses a deterministic
-train/validation split, tests L1 and L2 models, searches degrees from `1` to
-`8`, and searches regularization strengths from `1e-6` to `100`. The selected
-model is the one with the lowest validation MSE. If two models are effectively
-tied, the simpler lower-degree model is preferred.
+train/validation split, tests unregularized, L1, and L2 models, searches
+degrees from `1` to `8`, and searches regularization strengths from `1e-6` to
+`100` for L1/L2. The unregularized baseline uses alpha `0`. The selected model
+is the one with the lowest validation MSE. If two models are effectively tied,
+the simpler lower-degree model is preferred.
+
+## Plotting
+
+Basic matplotlib plots are available in `src.plots`.
+
+Plot model predictions for a one-feature dataset:
+
+```python
+from src.plots import plot_model_predictions
+
+fig = plot_model_predictions(x_values, y_values, predictions)
+fig.savefig("predictions.png")
+```
+
+Plot a simple model metric comparison:
+
+```python
+from src.plots import plot_metric_comparison
+
+fig = plot_metric_comparison({"none": 3.0, "l1": 1.0, "l2": 2.0})
+fig.savefig("metrics.png")
+```
+
+Plot automatic-search validation MSE by degree:
+
+```python
+from src.experiments import find_best_regularized_polynomial_from_csv
+from src.plots import plot_best_validation_mse_by_degree
+
+results = find_best_regularized_polynomial_from_csv("dataset.csv")
+fig = plot_best_validation_mse_by_degree(results["candidates"])
+fig.savefig("validation_mse_by_degree.png")
+```
 
 ## Setup
 
@@ -198,6 +249,7 @@ pytest
 This repository currently contains the initial project structure and a synthetic
 data generator based on the reference essay. It can also generate random
 polynomial datasets with custom feature counts and coefficients. CSV-based L1
-and L2 polynomial regression helpers are also available, including automatic
-degree and regularization-strength selection from a CSV file. The plotting logic
-will be added in small follow-up changes.
+and L2 polynomial regression helpers are also available alongside an
+unregularized baseline, including automatic degree and regularization-strength
+selection from a CSV file. Basic plotting helpers are available for model
+predictions, metric comparisons, and automatic-search validation curves.

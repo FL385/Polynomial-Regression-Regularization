@@ -12,6 +12,7 @@ from src.data_generator import (
     generate_random_coefficients,
     generate_random_polynomial_data,
     parse_coefficient_input,
+    save_dataset_to_csv,
     true_quadratic_function,
 )
 
@@ -132,6 +133,21 @@ def test_generate_random_polynomial_data_returns_coefficients() -> None:
     np.testing.assert_allclose(y_values, evaluate_polynomial(x_values, coefficients))
 
 
+def test_save_dataset_to_csv_writes_expected_columns(tmp_path) -> None:
+    """Generated datasets should save in the CSV format experiments read."""
+    x_values = np.array([[1.0, 2.0], [3.0, 4.0]])
+    y_values = np.array([5.0, 6.0])
+    csv_path = tmp_path / "dataset.csv"
+
+    save_dataset_to_csv(x_values, y_values, csv_path)
+
+    assert csv_path.read_text(encoding="utf-8").splitlines() == [
+        "x1,x2,y",
+        "1.0,2.0,5.0",
+        "3.0,4.0,6.0",
+    ]
+
+
 def test_true_quadratic_function_known_value() -> None:
     """The fixed equation should be easy to verify at a simple point."""
     x_values = np.array([[1.0, 2.0, 3.0]])
@@ -149,6 +165,9 @@ def test_generate_polynomial_data_rejects_invalid_arguments() -> None:
 
     with pytest.raises(ValueError, match="feature_range"):
         generate_polynomial_data(feature_range=(1.0, 1.0))
+
+    with pytest.raises(ValueError, match="same row count"):
+        save_dataset_to_csv(np.array([[1.0, 2.0]]), np.array([1.0, 2.0]), "bad.csv")
 
 
 def test_evaluate_polynomial_rejects_invalid_coefficients() -> None:

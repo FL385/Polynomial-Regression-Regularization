@@ -6,7 +6,9 @@ essay for this project. It has three input features and ten non-zero terms.
 
 from __future__ import annotations
 
+import csv
 from itertools import product
+from pathlib import Path
 import re
 from typing import Optional
 
@@ -263,6 +265,45 @@ def generate_polynomial_data(
         y_values = y_values + rng.normal(loc=0.0, scale=noise, size=n_samples)
 
     return x_values, y_values
+
+
+def save_dataset_to_csv(
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+    csv_path: str | Path,
+) -> None:
+    """Save feature values and target values to a CSV file.
+
+    The output format matches the experiment readers:
+    ``x1,x2,...,xn,y``.
+
+    Parameters
+    ----------
+    x_values:
+        Feature matrix with shape ``(n_samples, n_features)``.
+    y_values:
+        Target values with shape ``(n_samples,)``.
+    csv_path:
+        Destination CSV path.
+    """
+    x_values = np.asarray(x_values, dtype=float)
+    y_values = np.asarray(y_values, dtype=float)
+
+    if x_values.ndim != 2:
+        raise ValueError("x_values must be a 2D array.")
+    if y_values.ndim != 1:
+        raise ValueError("y_values must be a 1D array.")
+    if x_values.shape[0] != y_values.shape[0]:
+        raise ValueError("x_values and y_values must contain the same row count.")
+
+    path = Path(csv_path)
+    feature_names = [f"x{index + 1}" for index in range(x_values.shape[1])]
+
+    with path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow([*feature_names, "y"])
+        for x_row, y_value in zip(x_values, y_values):
+            writer.writerow([*x_row, y_value])
 
 
 def generate_polynomial_data_from_input(
