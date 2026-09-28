@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+import warnings
 
-from sklearn.linear_model import Lasso, LinearRegression, Ridge
-from sklearn.preprocessing import PolynomialFeatures
+import numpy as np
+from sklearn.model_selection import ParameterGrid
+from sklearn.exceptions import ConvergenceWarning
 
 from src.experiment.common import (
-    DEFAULT_ALPHA_CANDIDATES,
     DEFAULT_DEGREE_CANDIDATES,
     format_polynomial,
     is_better_candidate,
@@ -17,61 +18,55 @@ from src.experiment.common import (
     mean_squared_error,
     train_validation_split,
 )
-from src.experiment.l1_regression import fit_l1_polynomial
-from src.experiment.l2_regression import fit_l2_polynomial
-from src.experiment.no_regularization import fit_no_regularization_polynomial
-
-ExperimentFitFunction = Callable[
-    [Any, Any, list[str], int, float],
-    tuple[Lasso | LinearRegression | Ridge, PolynomialFeatures, list[str]],
-]
+from src.experiment.evaluation import extract_polynomial_coefficients
+from src.experiment.methods import FITTERS, PARAMETER_GRIDS
 
 
 def find_best_regularized_polynomial_from_csv(
     csv_path: str | Path,
 ) -> dict[str, Any]:
-    """Choose the best baseline, L1, or L2 polynomial model from only a CSV file."""
+    """Choose among seven polynomial regression methods from only a CSV file."""
     x_values, y_values, feature_columns = load_csv_dataset(csv_path=csv_path)
     x_train, x_validation, y_train, y_validation = train_validation_split(
         x_values=x_values,
         y_values=y_values,
     )
 
-    fitters: dict[str, ExperimentFitFunction] = {
-        "none": fit_no_regularization_polynomial,
-        "l1": fit_l1_polynomial,
-        "l2": fit_l2_polynomial,
-    }
-    alpha_candidates_by_regularization = {
-        "none": (0.0,),
-        "l1": DEFAULT_ALPHA_CANDIDATES,
-        "l2": DEFAULT_ALPHA_CANDIDATES,
-    }
     best_candidate: dict[str, Any] | None = None
     candidate_results: list[dict[str, Any]] = []
+    failed_candidates: list[dict[str, Any]] = []
 
-    for regularization, fit_function in fitters.items():
+    for regularization, fit_function in FITTERS.items():
         for degree in DEFAULT_DEGREE_CANDIDATES:
-            for alpha in alpha_candidates_by_regularization[regularization]:
-                model, polynomial_features, _ = fit_function(
-                    x_train,
-                    y_train,
-                    feature_columns,
-                    degree,
-                    alpha,
-                )
+            for parameters in ParameterGrid(PARAMETER_GRIDS[regularization]):
+                try:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("error", ConvergenceWarning)
+                        model, polynomial_features, _ = fit_function(
+                            x_train, y_train, feature_columns, degree, **parameters,
+                        )
+                except ConvergenceWarning as error:
+                    failed_candidates.append({
+                        "regularization": regularization, "degree": degree,
+                        "parameters": parameters, "reason": str(error),
+                    })
+                    continue
                 validation_predictions = model.predict(
                     polynomial_features.transform(x_validation)
                 )
                 candidate = {
                     "regularization": regularization,
                     "degree": degree,
-                    "alpha": alpha,
+                    "alpha": parameters.get("alpha"),
+                    "parameters": parameters,
                     "validation_mse": mean_squared_error(
                         y_true=y_validation,
                         y_predicted=validation_predictions,
                     ),
                 }
+                if not np.isfinite(candidate["validation_mse"]):
+                    failed_candidates.append({**candidate, "reason": "Non-finite MSE"})
+                    continue
                 candidate_results.append(candidate)
                 if is_better_candidate(candidate, best_candidate):
                     best_candidate = candidate
@@ -79,13 +74,13 @@ def find_best_regularized_polynomial_from_csv(
     if best_candidate is None:
         raise ValueError("No regression candidates were evaluated.")
 
-    final_fit_function = fitters[str(best_candidate["regularization"])]
-    final_model, _, final_feature_names = final_fit_function(
+    final_fit_function = FITTERS[str(best_candidate["regularization"])]
+    final_model, final_features, final_feature_names = final_fit_function(
         x_values,
         y_values,
         feature_columns,
         int(best_candidate["degree"]),
-        float(best_candidate["alpha"]),
+        **best_candidate["parameters"],
     )
     polynomial = format_polynomial(
         intercept=float(final_model.intercept_),
@@ -98,7 +93,7 @@ def find_best_regularized_polynomial_from_csv(
         key=lambda candidate: (
             float(candidate["validation_mse"]),
             int(candidate["degree"]),
-            float(candidate["alpha"]),
+            float(candidate["alpha"] or 0.0),
             str(candidate["regularization"]),
         ),
     )
@@ -107,6 +102,8 @@ def find_best_regularized_polynomial_from_csv(
         "best": {
             **best_candidate,
             "polynomial": polynomial,
+            "coefficients": extract_polynomial_coefficients(final_model, final_features),
         },
         "candidates": sorted_candidates,
+        "failed_candidates": failed_candidates,
     }

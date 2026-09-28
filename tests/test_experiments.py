@@ -158,7 +158,9 @@ def test_run_regression_comparison_from_csv_returns_baseline_l1_and_l2(
         l2_alpha=0.001,
     )
 
-    assert set(polynomials) == {"none", "l1", "l2"}
+    assert set(polynomials) == {
+        "none", "l1", "l2", "elastic_net", "bayesian_ridge", "ard", "huber",
+    }
     assert polynomials["none"].startswith("y =")
     assert polynomials["l1"].startswith("y =")
     assert polynomials["l2"].startswith("y =")
@@ -217,9 +219,11 @@ def test_find_best_regularized_polynomial_from_csv_selects_settings(
     results = find_best_regularized_polynomial_from_csv(csv_path)
     best = results["best"]
 
-    assert best["regularization"] in {"none", "l1", "l2"}
+    assert best["regularization"] in {
+        "none", "l1", "l2", "elastic_net", "bayesian_ridge", "ard", "huber",
+    }
     assert 1 <= best["degree"] <= 8
-    assert best["alpha"] >= 0
+    assert best["alpha"] is None or best["alpha"] >= 0
     assert best["validation_mse"] >= 0
     assert best["polynomial"].startswith("y =")
     assert results["candidates"][0]["validation_mse"] <= results["candidates"][-1][

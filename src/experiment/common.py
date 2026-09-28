@@ -7,10 +7,16 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from sklearn.linear_model import Lasso, LinearRegression, Ridge
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import (
+    ARDRegression, BayesianRidge, ElasticNet, HuberRegressor,
+    Lasso, LinearRegression, Ridge,
+)
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
-RegressionModel = Lasso | LinearRegression | Ridge
+RegressionModel = (
+    Lasso | LinearRegression | Ridge | ElasticNet | BayesianRidge
+    | ARDRegression | HuberRegressor
+)
 
 DEFAULT_DEGREE_CANDIDATES = tuple(range(1, 9))
 DEFAULT_ALPHA_CANDIDATES = (
@@ -59,10 +65,10 @@ def load_csv_dataset(
 
 def validate_degree_alpha(degree: int, alpha: float) -> None:
     """Validate polynomial degree and regularization strength."""
-    if degree <= 0:
+    if not isinstance(degree, int) or isinstance(degree, bool) or degree <= 0:
         raise ValueError("degree must be positive.")
-    if alpha < 0:
-        raise ValueError("alpha must be non-negative.")
+    if not np.isfinite(alpha) or alpha < 0:
+        raise ValueError("alpha must be finite and non-negative.")
 
 
 def format_feature_name(feature_name: str) -> str:
@@ -105,13 +111,25 @@ def fit_polynomial_model(
     feature_columns: list[str],
     degree: int,
 ) -> tuple[RegressionModel, PolynomialFeatures, list[str]]:
-    """Fit a model after expanding input values into polynomial features."""
+    """Fit scaled polynomial terms and restore original-unit coefficients.
+
+    Scaling is learned only from the supplied training rows. No centering is
+    applied, so restoring coefficients does not alter the intercept.
+    """
     polynomial_features = PolynomialFeatures(degree=degree, include_bias=False)
     x_polynomial = polynomial_features.fit_transform(x_values)
     polynomial_feature_names = polynomial_features.get_feature_names_out(
         feature_columns
     ).tolist()
-    model.fit(x_polynomial, y_values)
+    scaler = StandardScaler(with_mean=False)
+    model.fit(scaler.fit_transform(x_polynomial), y_values)
+    model.coef_ = model.coef_ / scaler.scale_
+    if isinstance(model, (BayesianRidge, ARDRegression)):
+        covariance_scale = scaler.scale_
+        if isinstance(model, ARDRegression):
+            covariance_scale = covariance_scale[model.lambda_ < model.threshold_lambda]
+        model.sigma_ = model.sigma_ / np.outer(covariance_scale, covariance_scale)
+        model.X_offset_ = model.X_offset_ * scaler.scale_
 
     return model, polynomial_features, polynomial_feature_names
 
@@ -139,11 +157,11 @@ def is_better_candidate(
 
     return (
         int(candidate["degree"]),
-        float(candidate["alpha"]),
+        float(candidate["alpha"] or 0.0),
         str(candidate["regularization"]),
     ) < (
         int(best["degree"]),
-        float(best["alpha"]),
+        float(best["alpha"] or 0.0),
         str(best["regularization"]),
     )
 
