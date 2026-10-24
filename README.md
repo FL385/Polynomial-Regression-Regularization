@@ -208,6 +208,12 @@ print(results["best"]["alpha"])
 print(results["best"]["polynomial"])
 ```
 
+The target column defaults to `y`. For a different target, use
+`find_best_regularized_polynomial_from_csv("dataset.csv", target_column="response")`
+or `run_experiment({"csv_path": "dataset.csv", "target_column": "response"})`.
+Every other CSV column is treated as an input feature, including a column named
+`y` when a different target is selected.
+
 This automatic search only requires the CSV file. It uses a deterministic
 train/validation split and searches degrees from `1` to `8` for all seven
 methods. Parameter grids are defined in `src/experiment/methods.py`:

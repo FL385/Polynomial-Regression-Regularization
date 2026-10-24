@@ -13,6 +13,36 @@ from src.experiments import run_experiment, fit_regularized_polynomial_from_csv
 import src.experiment.auto_selection as selection
 
 
+@pytest.mark.parametrize("entry_point", ["direct", "experiment"])
+@pytest.mark.parametrize("include_y", [False, True])
+def test_automatic_selection_respects_custom_target(
+    tmp_path, monkeypatch, entry_point, include_y,
+):
+    """Use the requested target even when a different y column is present."""
+    path = tmp_path / "custom_target.csv"
+    header = "x,response,y\n" if include_y else "x,response\n"
+    rows = [
+        f"{x},{1 + 2 * x}" + (f",{x % 3}" if include_y else "")
+        for x in range(20)
+    ]
+    path.write_text(header + "\n".join(rows), encoding="utf-8")
+    monkeypatch.setattr(selection, "FITTERS", {"none": FITTERS["none"]})
+    monkeypatch.setattr(selection, "DEFAULT_DEGREE_CANDIDATES", (1,))
+    if entry_point == "direct":
+        result = selection.find_best_regularized_polynomial_from_csv(
+            path, target_column="response",
+        )
+    else:
+        result = run_experiment({"csv_path": path, "target_column": "response"})
+    assert result["best"]["validation_mse"] < 1e-20
+    coefficients = result["best"]["coefficients"]
+    linear_term = (1, 0) if include_y else (1,)
+    assert coefficients[linear_term] == pytest.approx(2.0)
+    assert coefficients[(0,) * len(linear_term)] == pytest.approx(1.0)
+    if include_y:
+        assert coefficients[(0, 1)] == pytest.approx(0.0, abs=1e-12)
+
+
 @pytest.mark.parametrize("name,estimator", [
     ("elastic_net", ElasticNet(alpha=0.01, max_iter=50000)),
     ("bayesian_ridge", BayesianRidge()),

@@ -85,7 +85,9 @@ def run_experiment(config: dict[str, Any] | None = None) -> dict[str, Any]:
     if "true_coefficients" in config and "x_evaluation" not in config:
         raise ValueError("x_evaluation is required when true_coefficients is provided.")
     if "degree" not in config:
-        results = find_best_regularized_polynomial_from_csv(config["csv_path"])
+        results = find_best_regularized_polynomial_from_csv(
+            config["csv_path"], target_column=str(config.get("target_column", "y")),
+        )
         if "true_coefficients" in config:
             results["best"]["deviation"] = compare_polynomials(
                 results["best"]["coefficients"], config["true_coefficients"],

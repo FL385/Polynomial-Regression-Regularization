@@ -24,9 +24,12 @@ from src.experiment.methods import FITTERS, PARAMETER_GRIDS
 
 def find_best_regularized_polynomial_from_csv(
     csv_path: str | Path,
+    target_column: str = "y",
 ) -> dict[str, Any]:
-    """Choose among seven polynomial regression methods from only a CSV file."""
-    x_values, y_values, feature_columns = load_csv_dataset(csv_path=csv_path)
+    """Choose among seven polynomial methods using the named CSV target column."""
+    x_values, y_values, feature_columns = load_csv_dataset(
+        csv_path=csv_path, target_column=target_column,
+    )
     x_train, x_validation, y_train, y_validation = train_validation_split(
         x_values=x_values,
         y_values=y_values,
