@@ -20,6 +20,24 @@ from src.experiments import (
 )
 
 
+@pytest.mark.parametrize("degree", [1.9, True, "2", 0, -1])
+@pytest.mark.parametrize("entry_point", ["experiment", "comparison"])
+def test_fixed_degree_entry_points_reject_invalid_degree(
+    tmp_path: Path, degree: object, entry_point: str,
+) -> None:
+    """Invalid degrees must not silently become a different regression model."""
+    csv_path = tmp_path / "dataset.csv"
+    csv_path.write_text(
+        "x1,y\n" + "\n".join(f"{x},{1 + 2 * x}" for x in range(20)),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="degree"):
+        if entry_point == "experiment":
+            run_experiment({"csv_path": csv_path, "degree": degree})
+        else:
+            run_regression_comparison_from_csv(csv_path, degree=degree)
+
+
 def test_fit_regularized_polynomial_from_csv_returns_l2_polynomial(
     tmp_path: Path,
 ) -> None:

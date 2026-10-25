@@ -96,7 +96,7 @@ def run_experiment(config: dict[str, Any] | None = None) -> dict[str, Any]:
         return results
 
     results = {
-        "degree": int(config["degree"]),
+        "degree": config["degree"],
         "l1_alpha": float(config.get("l1_alpha", 0.01)),
         "l2_alpha": float(config.get("l2_alpha", 1.0)),
         "polynomials": {},

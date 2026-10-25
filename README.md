@@ -190,6 +190,8 @@ The output is a readable fitted polynomial, such as:
 y = 1.02 + 1.98*x1 - 0.49*x2^2
 ```
 
+The regression degree must be a positive integer; floats, booleans, and strings
+are rejected rather than converted to a different model setting.
 The regression degree must be provided because polynomial regression first
 expands the input features up to a chosen maximum degree. L1 and L2
 regularization shrink or remove coefficients after that feature expansion; they
