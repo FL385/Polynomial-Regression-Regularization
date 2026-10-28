@@ -296,6 +296,8 @@ relative coefficient L2 error, and function MSE, RMSE, MAE, and maximum absolute
 error. Missing terms count as zero; relative coefficient error is `None` for a
 zero original polynomial. Comparisons use full-precision fitted coefficients,
 including the intercept, rather than parsing rounded equation strings.
+Coefficient L2 norms use a stable calculation to avoid intermediate squaring
+overflow or underflow when coefficients have very large or small magnitudes.
 
 Function errors compare predictions with the noiseless original polynomial at
 the supplied points. They depend on the chosen input range and sample

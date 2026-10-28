@@ -22,6 +22,17 @@ def test_known_errors_include_missing_and_extra_terms():
     assert result["function_max_absolute_error"] == pytest.approx(2)
 
 
+@pytest.mark.parametrize("scale", [1e-200, 1e200])
+def test_coefficient_errors_remain_accurate_at_extreme_scales(scale):
+    """Representable norms must not underflow or overflow while squaring."""
+    true = {(1,): 3 * scale, (2,): 4 * scale}
+    fitted = {(1,): 6 * scale, (2,): 8 * scale}
+    result = compare_polynomials(fitted, true, np.zeros((2, 1)))
+    assert result["coefficient_l2"] == pytest.approx(5 * scale, rel=1e-12, abs=0)
+    assert result["relative_coefficient_l2"] == pytest.approx(1.0)
+    assert result["function_mse"] == 0
+
+
 def test_zero_truth_has_no_relative_coefficient_error():
     result = compare_polynomials({(0,): 2.0}, {(0,): 0.0}, np.zeros((2, 1)))
     assert result["relative_coefficient_l2"] is None

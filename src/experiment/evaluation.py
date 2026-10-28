@@ -56,8 +56,9 @@ def compare_polynomials(
     output_error = fitted_values - true_values
     if not np.all(np.isfinite(output_error)):
         raise ValueError("polynomial evaluation produced non-finite errors.")
-    coefficient_l2 = float(np.linalg.norm(coefficient_error))
-    true_norm = float(np.linalg.norm(true_vector))
+    # Hypot avoids squaring extreme coefficients before taking the square root.
+    coefficient_l2 = float(np.hypot.reduce(coefficient_error))
+    true_norm = float(np.hypot.reduce(true_vector))
     mse = float(np.mean(output_error ** 2))
     return {
         "coefficient_differences": differences,
