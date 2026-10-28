@@ -17,6 +17,18 @@ from src.data_generator import (
 )
 
 
+@pytest.mark.parametrize("noise", [np.nan, np.inf, -np.inf])
+@pytest.mark.parametrize("generator,kwargs", [
+    (generate_polynomial_data, {}),
+    (generate_polynomial_data_from_input, {"input_text": "1;(0)=1;(1)=2"}),
+    (generate_random_polynomial_data, {"n_features": 1, "degree": 1}),
+])
+def test_data_generators_reject_nonfinite_noise(generator, kwargs, noise) -> None:
+    """Invalid noise must not create noiseless or non-finite datasets."""
+    with pytest.raises(ValueError, match="noise"):
+        generator(n_samples=5, noise=noise, random_state=42, **kwargs)
+
+
 def test_generate_polynomial_data_shapes() -> None:
     """Generated features and targets should have predictable shapes."""
     x_values, y_values = generate_polynomial_data(n_samples=25, random_state=42)

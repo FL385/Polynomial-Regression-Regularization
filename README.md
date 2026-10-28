@@ -55,6 +55,9 @@ Polynomial-Regression-Regularization/
 The data generator supports both the reference essay dataset and custom
 polynomial datasets.
 
+`noise` is the Gaussian noise standard deviation and must be finite and
+non-negative. Set it to `0` for noiseless targets; `NaN` and infinity are rejected.
+
 Use the default reference relationship:
 
 ```python

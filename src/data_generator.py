@@ -246,8 +246,8 @@ def generate_polynomial_data(
     """
     if n_samples <= 0:
         raise ValueError("n_samples must be positive.")
-    if noise < 0:
-        raise ValueError("noise must be non-negative.")
+    if not np.isfinite(noise) or noise < 0:
+        raise ValueError("noise must be finite and non-negative.")
 
     lower, upper = feature_range
     if lower >= upper:
