@@ -149,7 +149,8 @@ x1,x2,...,y
 ```
 
 The `y` column is the target value, and all other columns are treated as input
-features.
+features. All column names must be unique; duplicate feature or target names
+are rejected before fitting to prevent silently overwriting data.
 
 Run all seven polynomial regression methods from a CSV file:
 

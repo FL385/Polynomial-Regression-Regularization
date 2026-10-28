@@ -42,6 +42,8 @@ def load_csv_dataset(
         reader = csv.DictReader(csv_file)
         if reader.fieldnames is None:
             raise ValueError("CSV file must include a header row.")
+        if len(set(reader.fieldnames)) != len(reader.fieldnames):
+            raise ValueError("CSV column names must be unique.")
         if target_column not in reader.fieldnames:
             raise ValueError(f"CSV file must include a '{target_column}' column.")
 
