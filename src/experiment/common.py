@@ -56,6 +56,13 @@ def load_csv_dataset(
         x_rows: list[list[float]] = []
         y_values: list[float] = []
         for row in reader:
+            # DictReader uses a None key for extra fields and None values for
+            # missing fields. Reject both before converting the numeric data.
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError(
+                    f"CSV row ending at line {reader.line_num} must have the "
+                    "same number of fields as the header."
+                )
             x_rows.append([float(row[column]) for column in feature_columns])
             y_values.append(float(row[target_column]))
 
