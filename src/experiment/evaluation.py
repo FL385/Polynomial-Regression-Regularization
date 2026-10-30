@@ -59,14 +59,18 @@ def compare_polynomials(
     # Hypot avoids squaring extreme coefficients before taking the square root.
     coefficient_l2 = float(np.hypot.reduce(coefficient_error))
     true_norm = float(np.hypot.reduce(true_vector))
-    mse = float(np.mean(output_error ** 2))
+    # Normalize before squaring or summing so intermediate values stay bounded.
+    error_scale = float(np.max(np.abs(output_error)))
+    scaled_error = output_error / error_scale if error_scale else output_error
+    scaled_mse = float(np.mean(scaled_error ** 2))
+    mse = (scaled_mse * error_scale) * error_scale
     return {
         "coefficient_differences": differences,
         "coefficient_l2": coefficient_l2,
         "relative_coefficient_l2": coefficient_l2 / true_norm if true_norm else None,
         "function_mse": mse,
-        "function_rmse": float(np.sqrt(mse)),
-        "function_mae": float(np.mean(np.abs(output_error))),
-        "function_max_absolute_error": float(np.max(np.abs(output_error))),
+        "function_rmse": float(np.sqrt(scaled_mse)) * error_scale,
+        "function_mae": float(np.mean(np.abs(scaled_error))) * error_scale,
+        "function_max_absolute_error": error_scale,
         "n_evaluation_samples": int(x_evaluation.shape[0]),
     }

@@ -300,6 +300,9 @@ zero original polynomial. Comparisons use full-precision fitted coefficients,
 including the intercept, rather than parsing rounded equation strings.
 Coefficient L2 norms use a stable calculation to avoid intermediate squaring
 overflow or underflow when coefficients have very large or small magnitudes.
+Function errors are scaled before squaring or averaging. RMSE and MAE remain
+accurate at extreme magnitudes even if MSE itself is too large or small for a
+floating-point number (reported as infinity or zero, respectively).
 
 Function errors compare predictions with the noiseless original polynomial at
 the supplied points. They depend on the chosen input range and sample

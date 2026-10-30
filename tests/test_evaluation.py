@@ -33,6 +33,24 @@ def test_coefficient_errors_remain_accurate_at_extreme_scales(scale):
     assert result["function_mse"] == 0
 
 
+@pytest.mark.parametrize("scale", [1e-200, 1e154, 1e200, 1e308])
+def test_function_errors_remain_accurate_at_extreme_scales(scale):
+    """RMSE and MAE remain finite even when MSE cannot be represented."""
+    with np.errstate(over="raise", invalid="raise"):
+        result = compare_polynomials(
+            {(1,): scale}, {(0,): 0.0}, np.array([[-1.0], [0.0], [1.0]]),
+        )
+    assert result["function_rmse"] == pytest.approx(
+        np.sqrt(2 / 3) * scale, rel=1e-12, abs=0,
+    )
+    assert result["function_mae"] == pytest.approx(
+        (2 / 3) * scale, rel=1e-12, abs=0,
+    )
+    expected_mse = ((2 / 3) * scale) * scale
+    assert result["function_mse"] == pytest.approx(expected_mse, rel=1e-12, abs=0)
+    assert result["function_max_absolute_error"] == scale
+
+
 def test_zero_truth_has_no_relative_coefficient_error():
     result = compare_polynomials({(0,): 2.0}, {(0,): 0.0}, np.zeros((2, 1)))
     assert result["relative_coefficient_l2"] is None
