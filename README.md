@@ -239,6 +239,8 @@ methods. Parameter grids are defined in `src/experiment/methods.py`:
 and ARD do not use the same alpha parameter as Ridge/Lasso, so their result
 `alpha` is `None`. Candidates that emit a convergence warning or produce a
 non-finite validation MSE are excluded and recorded in `failed_candidates`.
+Validation MSE is computed using scaled residuals so a finite result is not
+discarded due to intermediate sum-of-squares overflow.
 The selected model
 is the one with the lowest validation MSE. If two models are effectively tied,
 the simpler lower-degree model is preferred. All methods fit polynomial terms

@@ -144,8 +144,15 @@ def fit_polynomial_model(
 
 
 def mean_squared_error(y_true: np.ndarray, y_predicted: np.ndarray) -> float:
-    """Calculate mean squared error without adding another dependency surface."""
-    return float(np.mean((y_true - y_predicted) ** 2))
+    """Calculate MSE without overflowing the intermediate sum of squares."""
+    errors = y_true - y_predicted
+    if errors.size == 0:
+        return float("nan")
+    scale = float(np.max(np.abs(errors)))
+    if scale == 0 or not np.isfinite(scale):
+        return scale
+    scaled_mse = float(np.mean((errors / scale) ** 2))
+    return (scaled_mse * scale) * scale
 
 
 def is_better_candidate(

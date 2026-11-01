@@ -9,8 +9,38 @@ from sklearn.exceptions import ConvergenceWarning
 from src.data_generator import evaluate_polynomial, save_dataset_to_csv
 from src.experiment.methods import FITTERS
 from src.experiment.evaluation import extract_polynomial_coefficients
+from src.experiment.common import mean_squared_error
 from src.experiments import run_experiment, fit_regularized_polynomial_from_csv
 import src.experiment.auto_selection as selection
+
+
+def test_validation_mse_does_not_overflow_during_averaging():
+    with np.errstate(over="raise", invalid="raise"):
+        mse = mean_squared_error(np.array([1e154, -1e154, 0.0]), np.zeros(3))
+    assert mse == pytest.approx((2 / 3) * 1e308)
+
+
+@pytest.mark.parametrize("value", [np.inf, np.nan])
+def test_nonfinite_validation_errors_remain_nonfinite(value):
+    assert not np.isfinite(mean_squared_error(np.array([value]), np.zeros(1)))
+
+
+def test_large_finite_validation_mse_keeps_candidate(tmp_path, monkeypatch):
+    """A finite MSE must not be discarded because its intermediate sum overflows."""
+    path = tmp_path / "large_errors.csv"
+    save_dataset_to_csv(np.arange(20).reshape(-1, 1), np.zeros(20), path)
+
+    def fit_with_large_error(*args, **kwargs):
+        model, features, names = FITTERS["none"](*args, **kwargs)
+        model.intercept_ = 1e154
+        return model, features, names
+
+    monkeypatch.setattr(selection, "FITTERS", {"none": fit_with_large_error})
+    monkeypatch.setattr(selection, "DEFAULT_DEGREE_CANDIDATES", (1,))
+    result = selection.find_best_regularized_polynomial_from_csv(path)
+    assert result["best"]["validation_mse"] == pytest.approx(1e308)
+    assert len(result["candidates"]) == 1
+    assert result["failed_candidates"] == []
 
 
 @pytest.mark.parametrize("entry_point", ["direct", "experiment"])
