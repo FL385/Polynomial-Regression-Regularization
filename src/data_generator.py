@@ -7,7 +7,6 @@ essay for this project. It has three input features and ten non-zero terms.
 from __future__ import annotations
 
 import csv
-from itertools import product
 from pathlib import Path
 import re
 from typing import Optional
@@ -57,11 +56,15 @@ def _validate_coefficients(coefficients: PolynomialCoefficients) -> int:
 
 def _polynomial_exponents(n_features: int, degree: int) -> list[tuple[int, ...]]:
     """Return exponent tuples for all polynomial terms up to a degree."""
-    return [
-        exponents
-        for exponents in product(range(degree + 1), repeat=n_features)
-        if sum(exponents) <= degree
-    ]
+    exponents: list[tuple[int, ...]] = [()]
+    for _ in range(n_features):
+        # Extend only valid prefixes, preserving the original lexicographic order.
+        exponents = [
+            (*prefix, power)
+            for prefix in exponents
+            for power in range(degree - sum(prefix) + 1)
+        ]
+    return exponents
 
 
 def parse_coefficient_input(input_text: str) -> PolynomialCoefficients:

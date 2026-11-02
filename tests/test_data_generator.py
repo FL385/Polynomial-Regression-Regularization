@@ -131,6 +131,36 @@ def test_generate_random_coefficients_is_reproducible() -> None:
     assert all(sum(exponents) <= 2 for exponents in first)
 
 
+@pytest.mark.parametrize("include_bias", [True, False])
+def test_random_coefficients_preserve_seeded_term_order(include_bias) -> None:
+    """Changing term enumeration must preserve existing seeded experiments."""
+    expected_terms = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (2, 0)]
+    if not include_bias:
+        expected_terms = expected_terms[1:]
+    coefficients = generate_random_coefficients(
+        2, 2, random_state=42, include_bias=include_bias,
+    )
+    assert list(coefficients) == expected_terms
+    expected_values = np.random.default_rng(42).uniform(-1, 1, len(expected_terms))
+    np.testing.assert_array_equal(list(coefficients.values()), expected_values)
+
+
+@pytest.mark.parametrize("include_bias", [True, False])
+def test_high_dimensional_quadratic_includes_squares_and_interactions(include_bias):
+    """Twenty features need only 231 quadratic terms, including the constant."""
+    x_values, y_values, coefficients = generate_random_polynomial_data(
+        n_samples=8, n_features=20, degree=2, noise=0, random_state=42,
+        include_bias=include_bias,
+    )
+    assert x_values.shape == (8, 20)
+    assert len(coefficients) == (231 if include_bias else 230)
+    assert ((0,) * 20 in coefficients) == include_bias
+    assert (2,) + (0,) * 19 in coefficients
+    assert (1,) + (0,) * 18 + (1,) in coefficients
+    assert all(len(term) == 20 and sum(term) <= 2 for term in coefficients)
+    np.testing.assert_allclose(y_values, evaluate_polynomial(x_values, coefficients))
+
+
 def test_generate_random_polynomial_data_returns_coefficients() -> None:
     """Random polynomial datasets should include the generated coefficients."""
     x_values, y_values, coefficients = generate_random_polynomial_data(

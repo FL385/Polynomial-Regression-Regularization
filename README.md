@@ -54,6 +54,10 @@ Polynomial-Regression-Regularization/
 
 The data generator supports both the reference essay dataset and custom
 polynomial datasets.
+Random polynomial generation enumerates only terms within the total-degree
+limit, including interactions, rather than testing every combination of powers.
+This keeps low-degree experiments practical with many input features while
+preserving term order and existing seeded results.
 
 `noise` is the Gaussian noise standard deviation and must be finite and
 non-negative. Set it to `0` for noiseless targets; `NaN` and infinity are rejected.
