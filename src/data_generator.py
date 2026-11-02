@@ -147,6 +147,8 @@ def evaluate_polynomial(
 
     y_values = np.zeros(x_values.shape[0], dtype=float)
     for exponents, coefficient in coefficients.items():
+        if coefficient == 0:
+            continue
         term_values = np.ones(x_values.shape[0], dtype=float)
         for feature_index, power in enumerate(exponents):
             if power:

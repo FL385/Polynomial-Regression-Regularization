@@ -78,6 +78,28 @@ def test_evaluate_polynomial_uses_custom_coefficients() -> None:
     )
 
 
+@pytest.mark.parametrize("zero", [0.0, -0.0])
+def test_zero_terms_do_not_evaluate_overflowing_powers(zero) -> None:
+    """Zero square and interaction terms must not corrupt finite predictions."""
+    coefficients = {
+        (0, 0): 2.0, (1, 0): 1e-200, (2, 0): zero, (1, 1): zero,
+    }
+    points = np.array([[1e200, 1e200], [-1e200, 1e200]])
+    with np.errstate(over="raise", invalid="raise"):
+        values = evaluate_polynomial(points, coefficients)
+    np.testing.assert_allclose(values, [3.0, 1.0])
+
+
+def test_zero_terms_keep_generated_targets_finite() -> None:
+    coefficients = {(0,): 2.0, (1,): 1e-200, (2,): 0.0}
+    with np.errstate(over="raise", invalid="raise"):
+        x_values, y_values = generate_polynomial_data(
+            n_samples=8, noise=0, random_state=42,
+            feature_range=(-1e200, 1e200), coefficients=coefficients,
+        )
+    np.testing.assert_allclose(y_values, 2 + 1e-200 * x_values[:, 0])
+
+
 def test_generate_polynomial_data_accepts_custom_coefficients() -> None:
     """Generated data should support arbitrary feature counts and coefficients."""
     coefficients = {

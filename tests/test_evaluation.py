@@ -51,6 +51,15 @@ def test_function_errors_remain_accurate_at_extreme_scales(scale):
     assert result["function_max_absolute_error"] == scale
 
 
+def test_zero_high_degree_terms_do_not_break_ground_truth_comparison():
+    true = {(0,): 2.0, (1,): 1e-200}
+    fitted = {**true, (2,): 0.0}
+    with np.errstate(over="raise", invalid="raise"):
+        result = compare_polynomials(fitted, true, np.array([[-1e200], [1e200]]))
+    assert result["function_mse"] == 0
+    assert result["coefficient_l2"] == 0
+
+
 def test_zero_truth_has_no_relative_coefficient_error():
     result = compare_polynomials({(0,): 2.0}, {(0,): 0.0}, np.zeros((2, 1)))
     assert result["relative_coefficient_l2"] is None
