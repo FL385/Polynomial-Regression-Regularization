@@ -47,9 +47,11 @@ def _validate_coefficients(coefficients: PolynomialCoefficients) -> int:
     if n_features <= 0:
         raise ValueError("coefficient exponent tuples cannot be empty.")
 
-    for exponents in coefficients:
+    for exponents, coefficient in coefficients.items():
         if any(not isinstance(power, int) or power < 0 for power in exponents):
             raise ValueError("coefficient exponents must be non-negative integers.")
+        if not np.isfinite(coefficient):
+            raise ValueError("coefficients must contain only finite values.")
 
     return n_features
 

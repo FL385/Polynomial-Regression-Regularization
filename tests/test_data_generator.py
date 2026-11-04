@@ -248,6 +248,25 @@ def test_evaluate_polynomial_rejects_invalid_coefficients() -> None:
         evaluate_polynomial(x_values, {(-1, 0): 1.0})
 
 
+@pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf])
+@pytest.mark.parametrize("operation", ["evaluate", "generate"])
+def test_nonfinite_polynomial_coefficients_are_rejected(value, operation) -> None:
+    """Invalid ground truth must not silently create non-finite target values."""
+    coefficients = {(0,): value}
+    with pytest.raises(ValueError, match="coefficients must contain only finite"):
+        if operation == "evaluate":
+            evaluate_polynomial(np.zeros((3, 1)), coefficients)
+        else:
+            generate_polynomial_data(n_samples=3, noise=0, coefficients=coefficients)
+
+
+@pytest.mark.parametrize("value", ["1e999", "-1e999"])
+def test_coefficient_input_rejects_values_that_overflow_float(value) -> None:
+    """A syntactically numeric coefficient must still be finite after parsing."""
+    with pytest.raises(ValueError, match="coefficients must contain only finite"):
+        parse_coefficient_input(f"1;(0)={value}")
+
+
 def test_parse_coefficient_input_rejects_invalid_input() -> None:
     """Invalid input strings should fail with clear errors."""
     with pytest.raises(ValueError, match="feature count"):

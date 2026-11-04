@@ -61,6 +61,8 @@ preserving term order and existing seeded results.
 Polynomial evaluation skips exactly zero coefficients before computing powers,
 so unused high-degree terms cannot introduce overflow or `NaN` into an otherwise
 finite result. Small nonzero coefficients are still evaluated.
+All supplied coefficients must be finite. This includes parsed numeric strings:
+values such as `1e999` that become infinity are rejected before data generation.
 
 `noise` is the Gaussian noise standard deviation and must be finite and
 non-negative. Set it to `0` for noiseless targets; `NaN` and infinity are rejected.
