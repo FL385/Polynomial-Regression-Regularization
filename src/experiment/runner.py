@@ -116,6 +116,8 @@ def run_experiment(config: dict[str, Any] | None = None) -> dict[str, Any]:
         if name in {"l1", "l2"}:
             parameters["alpha"] = results[f"{name}_alpha"]
         parameters.update(method_parameters.get(name, {}))
+        if name in {"l1", "l2"}:
+            results[f"{name}_alpha"] = parameters["alpha"]
         results["parameters"][name] = parameters
         model, features, names = fitter(
             x_values, y_values, columns, results["degree"], **parameters,

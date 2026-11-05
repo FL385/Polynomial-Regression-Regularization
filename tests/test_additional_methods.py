@@ -10,7 +10,9 @@ from src.data_generator import evaluate_polynomial, save_dataset_to_csv
 from src.experiment.methods import FITTERS
 from src.experiment.evaluation import extract_polynomial_coefficients
 from src.experiment.common import mean_squared_error
-from src.experiments import run_experiment, fit_regularized_polynomial_from_csv
+from src.experiments import (
+    run_experiment, fit_regularized_polynomial_from_csv, summarize_results,
+)
 import src.experiment.auto_selection as selection
 
 
@@ -181,3 +183,21 @@ def test_fixed_degree_parameters_reach_estimator_and_summary(tmp_path):
     })
     assert result["polynomials"]["elastic_net"] == "y = 1"
     assert result["parameters"]["elastic_net"] == {"alpha": 1e6, "l1_ratio": 0.9}
+
+
+@pytest.mark.parametrize("name", ["l1", "l2"])
+def test_alpha_override_matches_fitted_model_and_report(tmp_path, name):
+    """The summary must report the effective alpha when per-method values win."""
+    x = np.linspace(-2, 2, 40).reshape(-1, 1)
+    path = tmp_path / "data.csv"
+    save_dataset_to_csv(x, 1 + 2 * x[:, 0], path)
+    result = run_experiment({
+        "csv_path": path, "degree": 1, f"{name}_alpha": 0.25,
+        "method_parameters": {name: {"alpha": 123.0}},
+    })
+    assert result[f"{name}_alpha"] == 123.0
+    assert result["parameters"][name]["alpha"] == 123.0
+    assert f"{name.upper()} alpha: 123.0" in summarize_results(result)
+    assert result["polynomials"][name] == fit_regularized_polynomial_from_csv(
+        path, name, degree=1, alpha=123.0,
+    )

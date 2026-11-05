@@ -273,6 +273,8 @@ polynomials = run_regression_comparison_from_csv(
 ```
 
 Fixed-degree `run_experiment` accepts the same `method_parameters` mapping.
+For L1 and L2, a per-method `alpha` overrides `l1_alpha` or `l2_alpha`.
+The returned alpha fields and text summary report the value actually used.
 The defaults are alpha `0.01` and ratio `0.5` for Elastic Net, alpha `0.0001`
 and epsilon `1.35` for Huber, and threshold `10000` for ARD. Degree-free
 automatic selection always uses the built-in search grids.
